@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../core/api_client.dart';
+import '../core/secure_test.dart';
 
 /// Sitting a test: one question at a time, a countdown, autosave, then the result.
 /// Choice, true/false, short answer and coding (typed as text) are supported; secure tests never reach this screen.
@@ -18,7 +19,7 @@ class QuizAttemptScreen extends StatefulWidget {
   State<QuizAttemptScreen> createState() => _QuizAttemptScreenState();
 }
 
-class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
+class _QuizAttemptScreenState extends State<QuizAttemptScreen> with WidgetsBindingObserver {
   late final List<Map<String, dynamic>> _questions = (widget.paper['questions'] as List).cast<Map<String, dynamic>>();
   late final int _attemptId = (widget.paper['attemptId'] as num).toInt();
   final Map<int, Set<int>> _selected = {};
@@ -33,9 +34,18 @@ class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
 
   int get _remaining => (_startSeconds - _clock.elapsed.inSeconds).clamp(0, 1 << 30);
 
+  bool get _secure => widget.paper['secureMode'] == true && SecureTest.supported;
+  final Map<int, int> _lastLength = {};
+  late final Stopwatch _sinceEntered = Stopwatch()..start();
+  bool _dialogOpen = false;
+
   @override
   void initState() {
     super.initState();
+    if (_secure) {
+      WidgetsBinding.instance.addObserver(this);
+      SecureTest.enter();
+    }
     for (final q in _questions) {
       _text[(q['id'] as num).toInt()] = TextEditingController();
     }
@@ -55,8 +65,76 @@ class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
     _autosave = Timer.periodic(const Duration(seconds: 30), (_) => _save());
   }
 
+  /// The server decides whether a report counts and whether the attempt ends; the app only tells it what happened.
+  Future<void> _report(String type, {String? detail}) async {
+    if (_result != null || _submitting) return;
+    final api = context.read<AuthService>().api.dio;
+    try {
+      final res = await api.post('/api/quiz-attempts/$_attemptId/violations', data: {
+        'type': type,
+        if (detail != null) 'detail': detail,
+        'clientAt': DateTime.now().toUtc().toIso8601String(),
+      });
+      final out = res.data as Map<String, dynamic>;
+      if (!mounted) return;
+      if (out['terminated'] == true) {
+        final result = await api.get('/api/quiz-attempts/$_attemptId/result');
+        if (mounted) setState(() => _result = result.data as Map<String, dynamic>);
+        await SecureTest.exit();
+      } else if (out['counted'] == true) {
+        await _warn(out['message'] as String? ?? 'Please do not leave the test.', out['warningsLeft']);
+      }
+    } catch (_) {
+      // Best effort: a failed report must never interrupt the student's test.
+    }
+  }
+
+  Future<void> _warn(String message, Object? warningsLeft) async {
+    if (_dialogOpen || !mounted) return;
+    _dialogOpen = true;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+        title: const Text('Warning'),
+        content: Text('$message${warningsLeft != null ? '\nWarnings left before the test ends: $warningsLeft' : ''}'),
+        actions: [FilledButton(onPressed: () => Navigator.pop(c), child: const Text('Back to the test'))],
+      ),
+    );
+    _dialogOpen = false;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The pin confirmation and permission prompts also pause the app briefly: ignore the first seconds.
+    if (!_secure || _sinceEntered.elapsed.inSeconds < 4 || _result != null) return;
+    if (state == AppLifecycleState.paused) {
+      _report('WINDOW_BLUR', detail: 'Left the app');
+    } else if (state == AppLifecycleState.resumed) {
+      SecureTest.isPinned().then((pinned) {
+        if (!pinned) {
+          _report('FULLSCREEN_EXIT', detail: 'Screen pinning was turned off');
+          SecureTest.enter();
+        }
+      });
+    }
+  }
+
+  /// A large jump in an answer box is a paste; the rules record it without counting it.
+  void _typed(int id, String value) {
+    final before = _lastLength[id] ?? 0;
+    _lastLength[id] = value.length;
+    if (_secure && value.length - before > 30) _report('PASTE_ATTEMPT', detail: 'Pasted ${value.length - before} characters');
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    if (_secure) {
+      WidgetsBinding.instance.removeObserver(this);
+      SecureTest.exit();
+    }
     _tick?.cancel();
     _autosave?.cancel();
     for (final c in _text.values) {
@@ -119,6 +197,7 @@ class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
     try {
       final res = await api.post('/api/quiz-attempts/$_attemptId/submit', data: {'answers': _answers()});
       if (mounted) setState(() => _result = res.data as Map<String, dynamic>);
+      await SecureTest.exit();
     } catch (e) {
       if (mounted) {
         setState(() => _submitting = false);
@@ -208,7 +287,8 @@ class _QuizAttemptScreenState extends State<QuizAttemptScreen> {
                 autocorrect: type != 'CODING',
                 enableSuggestions: type != 'CODING',
                 decoration: InputDecoration(border: const OutlineInputBorder(), hintText: type == 'CODING' ? 'Write your code here' : 'Your answer'),
-                onChanged: (_) => setState(() {}),
+                contextMenuBuilder: _secure ? (context, state) => const SizedBox.shrink() : null,
+                onChanged: (v) => _typed(id, v),
               ),
             ] else if (type == 'MULTI_CHOICE') ...[
               for (final o in options)

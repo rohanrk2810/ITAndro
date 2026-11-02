@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../core/api_client.dart';
+import '../core/secure_test.dart';
 import '../widgets/async_list.dart';
 import 'quiz_attempt_screen.dart';
 
@@ -40,15 +41,39 @@ class _TestsTab extends StatefulWidget {
 class _TestsTabState extends State<_TestsTab> {
   Key _refresh = UniqueKey();
 
-  /// A test that needs the secure desktop app, a camera or a microphone cannot be taken here.
+  /// Camera and microphone checks need the desktop app. A secure test without them can be taken on Android.
   bool _needsDesktop(Map<String, dynamic> t) =>
-      t['secureMode'] == true || t['requireCamera'] == true || t['requireMicrophone'] == true;
+      t['requireCamera'] == true || t['requireMicrophone'] == true || (t['secureMode'] == true && !SecureTest.supported);
+
+  Future<bool> _acceptRules(Map<String, dynamic> t) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Secure test'),
+        content: Text(
+          'While you take this test:\n'
+          '• The app is pinned to the screen. Android will ask you to confirm.\n'
+          '• Screenshots and screen recording are blocked.\n'
+          '• Leaving the app is recorded as a violation. After ${t['maxViolations']} violations the test ends.\n'
+          '• Copying and pasting is recorded.\n\n'
+          'Close other apps and turn on Do Not Disturb before you start.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('I understand, start')),
+        ],
+      ),
+    );
+    return ok == true;
+  }
 
   Future<void> _start(Map<String, dynamic> t) async {
     final api = context.read<AuthService>().api.dio;
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final resuming = t['inProgressAttemptId'] != null;
+    // Starting uses up an attempt, so the rules are accepted before the request, not after.
+    if (t['secureMode'] == true && !await _acceptRules(t)) return;
     try {
       final res = resuming
           ? await api.get('/api/quiz-attempts/${t['inProgressAttemptId']}')
