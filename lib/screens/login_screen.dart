@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../core/api_client.dart';
+import '../widgets/captcha.dart';
 import 'password_screens.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,12 +17,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final _form = GlobalKey<FormState>();
   final _identifier = TextEditingController();
   final _password = TextEditingController();
+  final _captcha = CaptchaController();
   bool _busy = false;
   bool _hide = true;
   String? _error;
 
   @override
   void dispose() {
+    _captcha.dispose();
     _identifier.dispose();
     _password.dispose();
     super.dispose();
@@ -29,13 +32,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
+    if (_captcha.enabled && _captcha.token == null) {
+      setState(() => _error = 'Please confirm you are not a robot.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await context.read<AuthService>().login(_identifier.text.trim(), _password.text);
+      await context.read<AuthService>().login(_identifier.text.trim(), _password.text, captchaToken: _captcha.token);
     } catch (e) {
+      // A token works once: whatever went wrong, ask for a fresh one.
+      _captcha.reset();
       if (mounted) setState(() => _error = apiErrorMessage(e, 'Sign in failed. Check your details.'));
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -84,6 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
                       onFieldSubmitted: (_) => _submit(),
                     ),
+                    const SizedBox(height: 8),
+                    CaptchaField(controller: _captcha),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       Text(_error!, style: TextStyle(color: theme.colorScheme.error)),

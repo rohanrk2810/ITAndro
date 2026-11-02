@@ -70,8 +70,12 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> login(String identifier, String password) async {
-    final res = await api.dio.post('/api/auth/login', data: {'identifier': identifier, 'password': password});
+  Future<void> login(String identifier, String password, {String? captchaToken}) async {
+    final res = await api.dio.post('/api/auth/login', data: {
+      'identifier': identifier,
+      'password': password,
+      if (captchaToken != null) 'captchaToken': captchaToken,
+    });
     await _apply(AuthResponse.fromJson(res.data as Map<String, dynamic>));
   }
 
@@ -88,7 +92,8 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Sends a one-time code to the email; no session needed.
-  Future<void> forgotPassword(String email) => _bare.post('/api/auth/forgot-password', data: {'email': email});
+  Future<void> forgotPassword(String email, {String? captchaToken}) =>
+      _bare.post('/api/auth/forgot-password', data: {'email': email, if (captchaToken != null) 'captchaToken': captchaToken});
 
   Future<void> resetPassword(String email, String otp, String newPassword) =>
       _bare.post('/api/auth/reset-password', data: {'email': email, 'otp': otp, 'newPassword': newPassword});

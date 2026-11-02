@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../core/api_client.dart';
+import '../widgets/captcha.dart';
 
 /// Shared by the three password forms: a busy flag, an error line and a submit guard.
 mixin _FormState<T extends StatefulWidget> on State<T> {
@@ -136,10 +137,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with _FormS
   final _email = TextEditingController();
   final _otp = TextEditingController();
   final _next = TextEditingController();
+  final _captcha = CaptchaController();
   bool _codeSent = false;
 
   @override
   void dispose() {
+    _captcha.dispose();
     _email.dispose();
     _otp.dispose();
     _next.dispose();
@@ -181,12 +184,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> with _FormS
                 validator: _required,
               ),
             ],
+            if (!_codeSent) ...[const SizedBox(height: 8), CaptchaField(controller: _captcha)],
             errorLine(context),
             if (!_codeSent)
               submit('Send code', () => run(() async {
-                    await auth.forgotPassword(_email.text.trim());
+                    if (_captcha.enabled && _captcha.token == null) {
+                      throw StateError('Please confirm you are not a robot.');
+                    }
+                    try {
+                      await auth.forgotPassword(_email.text.trim(), captchaToken: _captcha.token);
+                    } catch (_) {
+                      _captcha.reset();
+                      rethrow;
+                    }
                     if (mounted) setState(() => _codeSent = true);
-                  }))
+                  }, fallback: 'Please confirm you are not a robot, then try again.'))
             else
               submit('Reset password', () {
                 final navigator = Navigator.of(context);
