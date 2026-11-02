@@ -22,4 +22,5 @@ const navItems = <NavItem>[
   NavItem('Certificates', Icons.workspace_premium_outlined, ['ADMIN', 'STUDENT']),
   NavItem('Placements', Icons.work_outline, ['ADMIN', 'PLACEMENT', 'STUDENT']),
   NavItem('Announcements', Icons.campaign_outlined, _all),
+  NavItem('Account', Icons.person_outline, _all),
 ];

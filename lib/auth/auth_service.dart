@@ -75,6 +75,24 @@ class AuthService extends ChangeNotifier {
     await _apply(AuthResponse.fromJson(res.data as Map<String, dynamic>));
   }
 
+  /// Re-reads the signed-in account, e.g. after the forced password change clears mustChangePassword.
+  Future<void> reloadUser() async {
+    final res = await api.dio.get('/api/auth/me');
+    user = AppUser.fromJson(res.data as Map<String, dynamic>);
+    notifyListeners();
+  }
+
+  Future<void> changePassword(String current, String next) async {
+    await api.dio.post('/api/auth/change-password', data: {'currentPassword': current, 'newPassword': next});
+    await reloadUser();
+  }
+
+  /// Sends a one-time code to the email; no session needed.
+  Future<void> forgotPassword(String email) => _bare.post('/api/auth/forgot-password', data: {'email': email});
+
+  Future<void> resetPassword(String email, String otp, String newPassword) =>
+      _bare.post('/api/auth/reset-password', data: {'email': email, 'otp': otp, 'newPassword': newPassword});
+
   Future<void> logout() async {
     final stored = await _storage.read(key: _refreshKey);
     await _clear();
