@@ -7,6 +7,10 @@ import 'account_screen.dart';
 import 'announcements_screen.dart';
 import 'assessments_screen.dart';
 import 'batches_screen.dart';
+import 'certificates_screen.dart';
+import 'files_screen.dart';
+import 'id_cards_screen.dart';
+import 'placements_screen.dart';
 import 'dashboard_screen.dart';
 import 'live_classes_screen.dart';
 import 'progress_screen.dart';
@@ -78,6 +82,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return const CoursesScreen();
       case 'Finance':
         return const FinanceScreen();
+      case 'Certificates':
+        return const CertificatesScreen();
+      case 'Placements':
+        return const PlacementsScreen();
+      case 'Files':
+        return const FilesScreen();
+      case 'ID cards':
+        return const IdCardsScreen();
       case 'Assessments':
         return const AssessmentsScreen();
       case 'Live classes':

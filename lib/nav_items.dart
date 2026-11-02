@@ -22,6 +22,8 @@ const navItems = <NavItem>[
   NavItem('Finance', Icons.payments_outlined, ['ADMIN', 'COORDINATOR', 'FINANCE', 'STUDENT']),
   NavItem('Certificates', Icons.workspace_premium_outlined, ['ADMIN', 'STUDENT']),
   NavItem('Placements', Icons.work_outline, ['ADMIN', 'PLACEMENT', 'STUDENT']),
+  NavItem('Files', Icons.folder_outlined, _all),
+  NavItem('ID cards', Icons.badge_outlined, ['ADMIN', 'COORDINATOR', 'TRAINER', 'STUDENT']),
   NavItem('Announcements', Icons.campaign_outlined, _all),
   NavItem('Account', Icons.person_outline, _all),
 ];
