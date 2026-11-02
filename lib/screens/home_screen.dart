@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../nav_items.dart';
+import 'announcements_screen.dart';
+import 'courses_screen.dart';
+import 'finance_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -57,19 +60,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(current.icon, size: 48),
-              const SizedBox(height: 12),
-              Text('Welcome, ${user.fullName}', style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              Text('${current.label} screen is coming next.', textAlign: TextAlign.center),
-            ],
-          ),
+      body: _body(current, user.fullName),
+    );
+  }
+
+  Widget _body(NavItem item, String name) {
+    switch (item.label) {
+      case 'Announcements':
+        return const AnnouncementsScreen();
+      case 'Courses':
+        return const CoursesScreen();
+      case 'Finance':
+        return const FinanceScreen();
+    }
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(item.icon, size: 48),
+            const SizedBox(height: 12),
+            Text('Welcome, $name', style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text('${item.label} screen is coming next.', textAlign: TextAlign.center),
+          ],
         ),
       ),
     );
