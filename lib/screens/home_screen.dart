@@ -10,6 +10,7 @@ import 'batches_screen.dart';
 import 'certificates_screen.dart';
 import 'files_screen.dart';
 import 'id_cards_screen.dart';
+import 'notifications_screen.dart';
 import 'placements_screen.dart';
 import 'dashboard_screen.dart';
 import 'live_classes_screen.dart';
@@ -35,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final current = items[_index.clamp(0, items.length - 1)];
 
     return Scaffold(
-      appBar: AppBar(title: Text(current.label)),
+      appBar: AppBar(title: Text(current.label), actions: const [NotificationBell()]),
       drawer: Drawer(
         child: SafeArea(
           child: Column(
