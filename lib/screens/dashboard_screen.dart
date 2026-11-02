@@ -26,6 +26,17 @@ class _StudentDashboard extends StatelessWidget {
     return AsyncBody<(List<dynamic>, List<dynamic>)>(
       load: () async {
         final progress = (await api.get('/api/progress/me')).data as List;
+        // Course names are a nicety: keep the "Course #id" fallback if the lookup fails.
+        if (progress.isNotEmpty) {
+          final ids = progress.map((p) => p['courseId']).toSet().toList();
+          final names = await api.post('/api/courses/internal/lookup', data: ids).then(
+                (r) => {for (final c in r.data as List) c['id']: c['title']},
+                onError: (_) => <dynamic, dynamic>{},
+              );
+          for (final p in progress) {
+            p['courseTitle'] = names[p['courseId']];
+          }
+        }
         // Fees are optional on the dashboard: a missing plan or a failed call must not hide the courses.
         final fees = await api.get('/api/fees/me').then((r) => r.data as List, onError: (_) => <dynamic>[]);
         return (progress, fees);
@@ -58,7 +69,7 @@ class _StudentDashboard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Course #${p['courseId']} · ${p['status']}'),
+                      Text('${p['courseTitle'] ?? 'Course #${p['courseId']}'} · ${p['status']}'),
                       const SizedBox(height: 8),
                       LinearProgressIndicator(value: ((p['progressPercent'] as num?) ?? 0) / 100),
                       const SizedBox(height: 4),

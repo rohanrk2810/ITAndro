@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../widgets/async_list.dart';
+import 'lesson_screen.dart';
 
 class CoursesScreen extends StatelessWidget {
   const CoursesScreen({super.key});
@@ -83,7 +84,13 @@ class CourseDetailScreen extends StatelessWidget {
                         leading: Icon(l['completed'] == true ? Icons.check_circle : Icons.circle_outlined),
                         title: Text(l['title'] as String? ?? ''),
                         subtitle: Text(l['type'] as String? ?? ''),
-                        trailing: l['accessible'] == true ? null : const Icon(Icons.lock_outline, size: 18),
+                        trailing: l['accessible'] == true ? const Icon(Icons.chevron_right, size: 18) : const Icon(Icons.lock_outline, size: 18),
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => LessonScreen(lesson: l as Map<String, dynamic>, enrolled: d['enrolled'] == true)),
+                          );
+                          await reload();
+                        },
                       ),
                   ],
                 ),
