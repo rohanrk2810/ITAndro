@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../widgets/async_list.dart';
+import 'attendance_screen.dart';
 
 /// Batches the signed-in staff member or trainer may see; the server narrows the list to what they own.
 class BatchesScreen extends StatelessWidget {
@@ -51,9 +52,9 @@ class BatchDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final api = context.read<AuthService>().api.dio;
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
-        appBar: AppBar(title: Text(title), bottom: const TabBar(tabs: [Tab(text: 'Sessions'), Tab(text: 'Students')])),
+        appBar: AppBar(title: Text(title), bottom: const TabBar(tabs: [Tab(text: 'Sessions'), Tab(text: 'Students'), Tab(text: 'Attendance')])),
         body: TabBarView(children: [
           AsyncBody<List<dynamic>>(
             load: () async => (await api.get('/api/batches/$batchId/sessions')).data as List,
@@ -69,6 +70,12 @@ class BatchDetailScreen extends StatelessWidget {
                       title: Text('${s['sessionDate']} · ${s['startTime']}-${s['endTime']}'),
                       subtitle: Text(s['topic'] as String? ?? s['mode'] as String? ?? ''),
                       trailing: Text(s['status'] as String? ?? ''),
+                      onTap: s['status'] == 'CANCELLED'
+                          ? null
+                          : () async {
+                              final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => AttendanceScreen(session: s)));
+                              if (saved == true) await reload();
+                            },
                     ),
                 ],
               ),
@@ -87,6 +94,27 @@ class BatchDetailScreen extends StatelessWidget {
                       title: Text(s['studentName'] as String? ?? ''),
                       subtitle: Text(s['studentCode'] as String? ?? ''),
                       trailing: Text(s['status'] as String? ?? ''),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          AsyncBody<List<dynamic>>(
+            load: () async => (await api.get('/api/attendance/batches/$batchId')).data as List,
+            isEmpty: (a) => a.isEmpty,
+            emptyText: 'No attendance recorded yet.',
+            builder: (context, rows, reload) => RefreshIndicator(
+              onRefresh: reload,
+              child: ListView(
+                children: [
+                  for (final r in rows.cast<Map<String, dynamic>>())
+                    ListTile(
+                      title: Text(r['studentName'] as String? ?? ''),
+                      subtitle: Text('${r['attendedSessions']} of ${r['totalSessions']} sessions'),
+                      trailing: Text(
+                        r['attendancePercent'] == null ? '-' : '${(r['attendancePercent'] as num).round()}%',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: r['belowThreshold'] == true ? Theme.of(context).colorScheme.error : null),
+                      ),
                     ),
                 ],
               ),

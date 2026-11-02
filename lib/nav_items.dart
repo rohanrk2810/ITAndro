@@ -14,6 +14,7 @@ const _all = ['ADMIN', 'COORDINATOR', 'TRAINER', 'STUDENT', 'PLACEMENT', 'FINANC
 
 const navItems = <NavItem>[
   NavItem('Dashboard', Icons.dashboard_outlined, _all),
+  NavItem('Students', Icons.people_outline, ['ADMIN', 'COORDINATOR', 'TRAINER']),
   NavItem('Courses', Icons.menu_book_outlined, ['ADMIN', 'COORDINATOR', 'TRAINER', 'STUDENT']),
   NavItem('My progress', Icons.trending_up, ['STUDENT']),
   NavItem('Batches', Icons.calendar_month_outlined, ['ADMIN', 'COORDINATOR', 'TRAINER']),
