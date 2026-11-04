@@ -19,8 +19,8 @@ class ItIlmsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     return MaterialApp(
-      title: 'IT-ILMS',
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF2563EB), useMaterial3: true),
+      title: 'SutraVidya',
+      theme: ThemeData(colorSchemeSeed: const Color(0xFFEA6A0A), useMaterial3: true),
       home: !auth.ready
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
           : !auth.signedIn

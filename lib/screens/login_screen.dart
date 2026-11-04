@@ -66,8 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('IT-ILMS', textAlign: TextAlign.center, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    Image.asset('assets/logo-full.png', height: 150),
+                    const SizedBox(height: 8),
                     Text('Sign in to continue', textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
                     const SizedBox(height: 28),
                     TextFormField(

@@ -56,7 +56,16 @@ class AuthService extends ChangeNotifier {
     return _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);
   }
 
+  /// While a website page is open it owns the rotating refresh token; the app must not spend it meanwhile.
+  int webHolds = 0;
+
+  Future<String?> readRefreshToken() => _storage.read(key: _refreshKey);
+
+  /// The website rotated the refresh token: keep the newest one so the next app launch still signs in.
+  Future<void> rememberRefreshToken(String token) => _storage.write(key: _refreshKey, value: token);
+
   Future<String?> _doRefresh() async {
+    if (webHolds > 0) return null;
     final stored = await _storage.read(key: _refreshKey);
     if (stored == null) return null;
     try {

@@ -1,12 +1,11 @@
-# IT-ILMS mobile
+# SutraVidya mobile
 
-Flutter app (Android first) for the IT-ILMS learning system. It is a second client of the same backend: every call goes through the API gateway, and all authorization is enforced by the services, so the menu only hides what a role cannot use.
+Flutter app (Android first) for the SutraVidya (IT-ILMS) learning system. It is a second client of the same backend: every call goes through the API gateway, and all authorization is enforced by the services, so the menu only hides what a role cannot use.
 
 ## What it covers
 
-Students: dashboard, courses and lessons, progress, live classes (LiveKit), tests and assignments, fees, certificates, placements, files, ID card, announcements, notifications, account.
-Admin, coordinator and trainer: students, batches with sessions and attendance, live classes, dashboard summary.
-Not on mobile: secure (camera or lock-down) tests, which stay on the desktop app; setup screens (admissions, fee plans, question bank, branding, users), which stay on the web app.
+Native sign-in (with the human check, forgot password, forced password change), then the **whole website inside the app**, so every web feature for every role is there: admissions, courses and editors, batches, live classes, tests, finance, certificates, placements, files, ID cards, users, customize, monitoring and the rest. Camera and microphone, file upload, and saving or opening Excel, PDF and CSV files work. Design and limits: [docs/33-mobile-app.md](../docs/33-mobile-app.md) in the main repository.
+Not in the app: the secure-test lock-down (screen pinning, remote-tool scan), which stays on the Windows desktop app.
 
 ## Run
 
@@ -20,7 +19,8 @@ The default `http://10.0.2.2:8080` reaches the PC from the Android emulator only
 ## Build
 
 ```bash
-flutter build apk --debug      # build/app/outputs/flutter-apk/app-debug.apk
+flutter build apk --release --dart-define=API_BASE_URL=https://api.<SERVER_IP>.sslip.io
+                               # build/app/outputs/flutter-apk/app-release.apk
 flutter build appbundle        # Play Store bundle
 ```
 
